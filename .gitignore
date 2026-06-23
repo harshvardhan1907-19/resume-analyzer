@@ -1,0 +1,36 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.so
+.Python
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Test files
+test_*.py
+test_*.pdf
+test_*.txt
+create_test_*.py
+list_*.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Deployment
+*.pid
+*.seed
+*.pid.lock

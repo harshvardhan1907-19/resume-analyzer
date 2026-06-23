@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f0f4f8;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+
+        .auth-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .auth-section input {
+            padding: 10px;
+            margin: 5px 5px 5px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+
+        .btn-danger {
+            background: #fc8181;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #f56565;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upload-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .result-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        #analysis-result {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            min-height: 100px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-authenticated {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-unauthenticated {
+            background: #fed7d7;
+            color: #9b2c2c;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        #file-name {
+            margin-left: 10px;
+            color: #4a5568;
+        }
+
+        .error {
+            color: #e53e3e;
+            padding: 10px;
+            margin-top: 10px;
+            background: #fff5f5;
+            border-radius: 4px;
+            border: 1px solid #feb2b2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🤖 AI Resume Analyzer</h1>
+        <p style="color: #4a5568; margin-bottom: 20px;">Upload your resume and get AI-powered insights</p>
+
+        <!-- Authentication Section -->
+        <div class="auth-section">
+            <h3>Authentication</h3>
+            <div>
+                <input type="text" id="username" placeholder="Username" value="">
+                <input type="password" id="password" placeholder="Password" value="">
+                <button class="btn btn-primary" id="loginBtn">Login</button>
+                <button class="btn btn-primary" id="registerBtn">Register</button>
+                <button class="btn btn-danger" id="logoutBtn">Logout</button>
+            </div>
+            <div id="authStatus" class="status-badge status-unauthenticated" style="margin-top: 10px;">
+                ❌ Not authenticated
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section hidden" id="uploadSection">
+            <h3>Upload Resume</h3>
+            <div>
+                <input type="file" id="fileInput" accept=".pdf">
+                <button class="btn btn-success" id="uploadBtn">Upload & Analyze</button>
+            </div>
+            <div id="file-name">No file selected</div>
+            <div id="uploadStatus" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section">
+            <h3>Analysis Result</h3>
+            <div id="analysis-result">Upload a PDF resume to get AI-powered insights.</div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let token = localStorage.getItem('access_token');
+        let username = '';
+
+        // DOM elements
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const authStatus = document.getElementById('authStatus');
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileName = document.getElementById('file-name');
+        const analysisResult = document.getElementById('analysis-result');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        const API_BASE = '/api';
+
+        // Update UI based on authentication
+        function updateAuthUI() {
+            if (token) {
+                authStatus.className = 'status-badge status-authenticated';
+                authStatus.textContent = `✅ Authenticated as ${username}`;
+                uploadSection.classList.remove('hidden');
+            } else {
+                authStatus.className = 'status-badge status-unauthenticated';
+                authStatus.textContent = '❌ Not authenticated';
+                uploadSection.classList.add('hidden');
+            }
+        }
+
+        // Login function
+        async function login() {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            try {
+                const response = await fetch(`${API_BASE}/accounts/token/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    token = data.access;
+                    localStorage.setItem('access_token', token);
+                    localStorage.setItem('refresh_token', data.refresh);
+                    window.username = username;
+                    updateAuthUI();
+                    analysisResult.textContent = '✅ Login successful! Upload a resume to analyze.';
+                } else {
+                    analysisResult.textContent = `❌ Login failed: ${data.detail || 'Invalid credentials'}`;
+                }
+            } catch (error) {
+                analysisResult.textContent = `❌ Network error: ${error.message}`;
+            }
+        }
+
+        // Register function
+        async function register() {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            try {
+                const response = await fetch(`${API_BASE}/accounts/register/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        password2: password,
+                        email: `${username}@example.com`,
+                        first_name: username,
+                        last_name: 'User'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    analysisResult.textContent = '✅ Registration successful! You can now login.';
+                } else {
+                    const errors = Object.values(data).flat().join(', ');
+                    analysisResult.textContent = `❌ Registration failed: ${errors}`;
+                }
+            } catch (error) {
+                analysisResult.textContent = `❌ Network error: ${error.message}`;
+            }
+        }
+
+        // Logout function
+        function logout() {
+            token = null;
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.username = '';
+            updateAuthUI();
+            analysisResult.textContent = '👋 Logged out.';
+            fileInput.value = '';
+            fileName.textContent = 'No file selected';
+        }
+
+        // Upload and analyze function
+        async function uploadAndAnalyze() {
+            if (!token) {
+                analysisResult.textContent = '❌ Please login first.';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (!file) {
+                analysisResult.textContent = '❌ Please select a PDF file.';
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                analysisResult.textContent = '❌ Only PDF files are supported.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('resume', file);
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Analyzing...';
+            analysisResult.textContent = '⏳ Uploading and analyzing your resume...';
+
+            try {
+                const response = await fetch(`${API_BASE}/resumes/analyze/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    analysisResult.textContent = data.analysis || '✅ Analysis complete!';
+                    fileName.textContent = `${data.filename} (${new Date(data.created_at).toLocaleString()})`;
+                } else {
+                    analysisResult.textContent = `❌ Error: ${data.error || 'Analysis failed'}`;
+                }
+            } catch (error) {
+                analysisResult.textContent = `❌ Network error: ${error.message}`;
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload & Analyze';
+            }
+        }
+
+        // Event listeners
+        loginBtn.addEventListener('click', login);
+        registerBtn.addEventListener('click', register);
+        logoutBtn.addEventListener('click', logout);
+        uploadBtn.addEventListener('click', uploadAndAnalyze);
+
+        fileInput.addEventListener('change', function () {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+            } else {
+                fileName.textContent = 'No file selected';
+            }
+        });
+
+        // Enter key support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.closest('.auth-section')) {
+                login();
+            }
+        });
+
+        // Check initial auth state
+        if (token) {
+            // Try to get user info or just show as authenticated
+            window.username = 'user';
+            updateAuthUI();
+        }
+    </script>
+</body>
+
+</html>
