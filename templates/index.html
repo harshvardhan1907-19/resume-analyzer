@@ -303,54 +303,64 @@
         }
 
         // Upload and analyze function
-        async function uploadAndAnalyze() {
-            if (!token) {
-                analysisResult.textContent = '❌ Please login first.';
-                return;
-            }
-
-            const file = fileInput.files[0];
-            if (!file) {
-                analysisResult.textContent = '❌ Please select a PDF file.';
-                return;
-            }
-
-            if (!file.name.toLowerCase().endsWith('.pdf')) {
-                analysisResult.textContent = '❌ Only PDF files are supported.';
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('resume', file);
-
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Analyzing...';
-            analysisResult.textContent = '⏳ Uploading and analyzing your resume...';
-
-            try {
-                const response = await fetch(`${API_BASE}/resumes/analyze`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    analysisResult.textContent = data.analysis || '✅ Analysis complete!';
-                    fileName.textContent = `${data.filename} (${new Date(data.created_at).toLocaleString()})`;
-                } else {
-                    analysisResult.textContent = `❌ Error: ${data.error || 'Analysis failed'}`;
+            async function uploadAndAnalyze() {
+                if (!token) {
+                    analysisResult.textContent = '❌ Please login first.';
+                    return;
                 }
-            } catch (error) {
-                analysisResult.textContent = `❌ Network error: ${error.message}`;
-            } finally {
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Upload & Analyze';
+
+                const file = fileInput.files[0];
+                if (!file) {
+                    analysisResult.textContent = '❌ Please select a PDF file.';
+                    return;
+                }
+
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    analysisResult.textContent = '❌ Only PDF files are supported.';
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('resume', file);
+
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Analyzing...';
+                analysisResult.textContent = '⏳ Uploading and analyzing your resume...';
+
+                try {
+                    const response = await fetch(`${API_BASE}/resumes/analyze/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: formData
+                    });
+
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('Non-JSON response:', text);
+                        analysisResult.textContent = `❌ Server error: API returned HTML instead of JSON. Please check the API endpoint.`;
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        analysisResult.textContent = data.analysis || '✅ Analysis complete!';
+                        fileName.textContent = `${data.filename} (${new Date(data.created_at).toLocaleString()})`;
+                    } else {
+                        analysisResult.textContent = `❌ Error: ${data.error || data.detail || 'Analysis failed'}`;
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    analysisResult.textContent = `❌ Network error: ${error.message}`;
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload & Analyze';
+                }
             }
-        }
 
         // Event listeners
         loginBtn.addEventListener('click', login);
