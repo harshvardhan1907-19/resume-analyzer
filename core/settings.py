@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,resume-analyzer-9pqr.onrender.com').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -151,7 +151,7 @@ if not DEBUG:
     
     # CORS for production
     CORS_ALLOWED_ORIGINS = [
-        'https://your-app-name.onrender.com',
+        'https://resume-analyzer-9pqr.onrender.com',
     ]
     CORS_ALLOW_CREDENTIALS = True
     
