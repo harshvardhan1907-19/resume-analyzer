@@ -6,6 +6,8 @@ services:
     buildCommand: "./build.sh"
     startCommand: "gunicorn core.wsgi:application"
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -14,5 +16,3 @@ services:
         sync: false
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
-      - key: PYTHON_VERSION
-        value: 3.11.9
