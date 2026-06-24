@@ -16,3 +16,5 @@ services:
         sync: false
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: DISABLE_COLLECTSTATIC
+        value: 0
