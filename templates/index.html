@@ -328,7 +328,7 @@
             analysisResult.textContent = '⏳ Uploading and analyzing your resume...';
 
             try {
-                const response = await fetch(`${API_BASE}/resumes/analyze/`, {
+                const response = await fetch(`${API_BASE}/resumes/analyze`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
