@@ -12,6 +12,12 @@ from .utils import PDFParser
 from .services import OpenAIService
 from .gemini_service import GeminiService
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+import datetime
+
+from pypdf import PdfReader
+from google import genai
 
 logger = logging.getLogger(__name__)
 
@@ -58,23 +64,6 @@ class ResumeListView(generics.ListAPIView):
     def get_queryset(self):
         return Resume.objects.filter(user=self.request.user).order_by('-created_at')
     
-# resumes/views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-import datetime
-
-# resumes/views.py
-import datetime
-from pypdf import PdfReader
-from google import genai
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
 
 class ResumeAnalyzeView(APIView):
     permission_classes = [IsAuthenticated]
