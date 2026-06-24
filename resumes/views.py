@@ -1,4 +1,5 @@
 import logging
+import os
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -65,15 +66,23 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 import datetime
 
+# resumes/views.py
+import datetime
+from pypdf import PdfReader
+from google import genai
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+
 class ResumeAnalyzeView(APIView):
-    # This ensures your 'Authorization: Bearer <token>' header is enforced
     permission_classes = [IsAuthenticated]
-    # Necessary for handling file uploads (FormData)
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
         try:
-            # Check if file exists in the request
+            # 1. Validate file presence
             if 'resume' not in request.FILES:
                 return Response(
                     {"error": "No resume file found in the request."}, 
@@ -82,21 +91,53 @@ class ResumeAnalyzeView(APIView):
             
             uploaded_file = request.FILES['resume']
             
-            # --- YOUR AI ANALYSIS LOGIC HERE ---
-            # Extract text from uploaded_file (e.g., using PyPDF2 or pdfplumber)
-            # Send text to your LLM / AI wrapper
-            mock_analysis = "This is a placeholder for your AI model's feedback text."
-            # -----------------------------------
+            # 2. In-memory Text Extraction from PDF
+            try:
+                reader = PdfReader(uploaded_file)
+                resume_text = ""
+                for page in reader.pages:
+                    text = page.extract_text()
+                    if text:
+                        resume_text += text + "\n"
+                
+                if not resume_text.strip():
+                    return Response(
+                        {"error": "Could not extract text from the PDF. Ensure it is not an image-only scan."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except Exception as e:
+                return Response(
+                    {"error": f"Failed to parse PDF file: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            # The frontend expects this exact structural format:
+            # 3. Call the Gemini AI Client
+            # Tip: It's best practice to use os.environ.get('GEMINI_API_KEY') here
+            client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
+            
+            prompt = (
+                "You are an expert technical recruiter and resume reviewer. "
+                "Analyze the following resume text. Provide constructive feedback, "
+                "highlight key strengths, note missing critical skills or areas of improvement, "
+                "and give actionable advice to make it stand out:\n\n"
+                f"{resume_text}"
+            )
+
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            
+            ai_analysis = response.text
+
+            # 4. Return the live data to your frontend
             return Response({
-                "analysis": mock_analysis,
+                "analysis": ai_analysis,
                 "filename": uploaded_file.name,
                 "created_at": datetime.datetime.now().isoformat()
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            # Catch crashes and explicitly force a JSON error response instead of HTML
             return Response(
                 {"error": f"Internal server processing error: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
