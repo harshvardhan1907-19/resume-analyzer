@@ -57,114 +57,47 @@ class ResumeListView(generics.ListAPIView):
     def get_queryset(self):
         return Resume.objects.filter(user=self.request.user).order_by('-created_at')
     
+# resumes/views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+import datetime
+
 class ResumeAnalyzeView(APIView):
-    """
-    Analyze a resume using AI (Gemini preferred, OpenAI as fallback)
-    """
-    permission_classes = [permissions.IsAuthenticated]
+    # This ensures your 'Authorization: Bearer <token>' header is enforced
+    permission_classes = [IsAuthenticated]
+    # Necessary for handling file uploads (FormData)
     parser_classes = [MultiPartParser, FormParser]
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Initialize both services
-        self.gemini_service = GeminiService()
-        self.openai_service = OpenAIService()
-    
+
     def post(self, request, *args, **kwargs):
-        # Check if file is provided
-        file_obj = request.FILES.get('resume')
-        if not file_obj:
-            return Response(
-                {'error': 'No file provided'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Validate file is PDF
-        if not file_obj.name.lower().endswith('.pdf'):
-            return Response(
-                {'error': 'File must be a PDF'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
         try:
-            # Save the file temporarily
-            resume = Resume.objects.create(
-                user=request.user,
-                file=file_obj,
-                filename=file_obj.name,
-                file_size=file_obj.size,
-                status='pending'
-            )
-            
-            # Extract text from PDF
-            try:
-                if hasattr(file_obj, 'seek'):
-                    file_obj.seek(0)
-                
-                extracted_text = PDFParser.extract_text_from_pdf(file_obj)
-                resume.content = extracted_text
-                resume.status = 'processing'
-                resume.save()
-                
-                logger.info(f"Extracted {len(extracted_text)} characters from resume {resume.id}")
-                
-            except Exception as e:
-                logger.error(f"PDF extraction error for resume {resume.id}: {str(e)}")
-                resume.status = 'failed'
-                resume.error_message = str(e)
-                resume.save()
+            # Check if file exists in the request
+            if 'resume' not in request.FILES:
                 return Response(
-                    {'error': f'Failed to extract text from PDF: {str(e)}'},
+                    {"error": "No resume file found in the request."}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Analyze with AI - Try Gemini first, fallback to OpenAI
-            analysis = None
-            analysis_source = None
+            uploaded_file = request.FILES['resume']
             
-            # Try Gemini
-            try:
-                analysis = self.gemini_service.analyze_resume(extracted_text)
-                if analysis and "Mock Mode" not in analysis and "Error" not in analysis:
-                    analysis_source = "Google Gemini"
-                    logger.info(f"Analysis completed using Gemini for resume {resume.id}")
-            except Exception as e:
-                logger.warning(f"Gemini failed: {str(e)}")
-            
-            # If Gemini failed, try OpenAI
-            if not analysis or analysis_source is None:
-                try:
-                    analysis = self.openai_service.analyze_resume(extracted_text)
-                    if analysis and "Mock Mode" not in analysis and "Error" not in analysis:
-                        analysis_source = "OpenAI"
-                        logger.info(f"Analysis completed using OpenAI for resume {resume.id}")
-                except Exception as e:
-                    logger.warning(f"OpenAI failed: {str(e)}")
-            
-            # If both fail, use mock analysis
-            if not analysis or analysis_source is None:
-                analysis = self.gemini_service._get_mock_analysis(extracted_text)
-                analysis_source = "Mock Mode"
-                logger.info(f"Using mock analysis for resume {resume.id}")
-            
-            # Save the analysis
-            resume.analysis = analysis + f"\n\n---\n**Analysis Source**: {analysis_source}"
-            resume.status = 'completed'
-            resume.analyzed_at = timezone.now()
-            resume.save()
-            
+            # --- YOUR AI ANALYSIS LOGIC HERE ---
+            # Extract text from uploaded_file (e.g., using PyPDF2 or pdfplumber)
+            # Send text to your LLM / AI wrapper
+            mock_analysis = "This is a placeholder for your AI model's feedback text."
+            # -----------------------------------
+
+            # The frontend expects this exact structural format:
             return Response({
-                'id': resume.id,
-                'filename': resume.filename,
-                'analysis': resume.analysis,
-                'status': resume.status,
-                'source': analysis_source,
-                'created_at': resume.created_at
+                "analysis": mock_analysis,
+                "filename": uploaded_file.name,
+                "created_at": datetime.datetime.now().isoformat()
             }, status=status.HTTP_200_OK)
-                
+
         except Exception as e:
-            logger.error(f"Error processing resume: {str(e)}")
+            # Catch crashes and explicitly force a JSON error response instead of HTML
             return Response(
-                {'error': str(e)},
+                {"error": f"Internal server processing error: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
