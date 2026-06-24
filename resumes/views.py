@@ -123,9 +123,9 @@ class ResumeAnalyzeView(APIView):
             )
 
             models_to_try = [
-                'gemini-2.0-flash',
-                'gemini-1.5-flash',
+                'gemini-3.5-flash',
                 'gemini-2.5-flash',
+                'gemini-1.5-flash',
             ]
             
             response = None
