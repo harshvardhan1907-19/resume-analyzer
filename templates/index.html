@@ -245,6 +245,7 @@
                     token = data.access;
                     localStorage.setItem('access_token', token);
                     localStorage.setItem('refresh_token', data.refresh);
+                    localStorage.setItem('username', username);
                     window.username = username;
                     updateAuthUI();
                     analysisResult.textContent = '✅ Login successful! Upload a resume to analyze.';
@@ -295,6 +296,7 @@
             token = null;
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            localStorage.removeItem('username');
             window.username = '';
             updateAuthUI();
             analysisResult.textContent = '👋 Logged out.';
@@ -335,6 +337,12 @@
                         },
                         body: formData
                     });
+
+                    if (response.status === 401) {
+                        logout();
+                        analysisResult.textContent = '❌ Session expired or token invalid. Please log in again.';
+                        return;
+                    }
 
                     // Check if response is JSON
                     const contentType = response.headers.get('content-type');
@@ -386,7 +394,7 @@
         // Check initial auth state
         if (token) {
             // Try to get user info or just show as authenticated
-            window.username = 'user';
+            window.username = localStorage.getItem('username') || 'user';
             updateAuthUI();
         }
     </script>

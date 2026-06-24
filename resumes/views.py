@@ -111,8 +111,7 @@ class ResumeAnalyzeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # 3. Call the Gemini AI Client
-            # Tip: It's best practice to use os.environ.get('GEMINI_API_KEY') here
+            # 3. Call the Gemini AI Client with fallback models
             client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
             
             prompt = (
@@ -123,10 +122,30 @@ class ResumeAnalyzeView(APIView):
                 f"{resume_text}"
             )
 
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-            )
+            models_to_try = [
+                'gemini-2.0-flash',
+                'gemini-1.5-flash',
+                'gemini-2.5-flash',
+            ]
+            
+            response = None
+            last_error = None
+            for model_name in models_to_try:
+                try:
+                    logger.info(f"Attempting resume analysis with Gemini model: {model_name}")
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                    )
+                    logger.info(f"Successfully analyzed resume with model: {model_name}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Failed to generate content with {model_name}: {str(e)}")
+                    last_error = e
+                    continue
+            
+            if response is None:
+                raise last_error or Exception("All Gemini models failed to respond.")
             
             ai_analysis = response.text
 
