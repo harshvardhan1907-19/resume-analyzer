@@ -90,36 +90,6 @@ An intelligent web application that analyzes resumes using Google's Gemini AI an
 | **Render** | Cloud deployment |
 | **WhiteNoise** | Static file serving |
 
----
-
-## 🏗️ Architecture
-resume-analyzer/
-├── core/
-│   ├── settings.py          # Django settings
-│   ├── urls.py              # Main URL routing
-│   └── wsgi.py              # WSGI configuration
-├── accounts/
-│   ├── models.py            # Custom User model
-│   ├── views.py             # Authentication views
-│   ├── serializers.py       # User serializers
-│   └── urls.py              # Auth endpoints
-├── resumes/
-│   ├── models.py            # Resume model
-│   ├── views.py             # Resume analysis views
-│   ├── serializers.py       # Resume serializers
-│   ├── utils.py             # PDF parser
-│   ├── gemini_service.py    # Gemini AI integration
-│   └── urls.py              # Resume endpoints
-├── templates/
-│   └── index.html           # Frontend interface
-├── media/                   # Uploaded files
-├── static/                  # Static files
-├── requirements.txt         # Python dependencies
-├── build.sh                 # Render build script
-├── runtime.txt              # Python version
-└── .env.example             # Environment template
-
----
 
 ## 💻 Installation
 
