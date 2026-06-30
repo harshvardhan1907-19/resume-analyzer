@@ -10,7 +10,7 @@ An intelligent web application that analyzes resumes using Google's Gemini AI an
 
 ---
 
-## 🚀 Live Demo
+## 🚀 Live Demo 
 
 🔗 **[View Live Application](https://resume-analyzer-9pqr.onrender.com/)**
 
