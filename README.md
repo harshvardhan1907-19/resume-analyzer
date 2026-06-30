@@ -93,41 +93,31 @@ An intelligent web application that analyzes resumes using Google's Gemini AI an
 ---
 
 ## 🏗️ Architecture
-┌─────────────────────────────────────────────────────────────────┐
-│ USER INTERFACE │
-│ (HTML/CSS/JavaScript) │
-└─────────────────────────────────────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ API LAYER │
-│ (Django REST Framework) │
-├─────────────────────────────────────────────────────────────────┤
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
-│ │ Accounts │ │ Resumes │ │ Analysis │ │
-│ │ API │ │ API │ │ API │ │
-│ └──────────────┘ └──────────────┘ └──────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ BUSINESS LOGIC │
-├─────────────────────────────────────────────────────────────────┤
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
-│ │ JWT Auth │ │ PDF Parser │ │ Gemini AI │ │
-│ │ Service │ │ Service │ │ Service │ │
-│ └──────────────┘ └──────────────┘ └──────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ DATA LAYER │
-│ (SQLite / PostgreSQL) │
-├─────────────────────────────────────────────────────────────────┤
-│ resumes_resume table │
-│ accounts_user table │
-└─────────────────────────────────────────────────────────────────┘
-
+resume-analyzer/
+├── core/
+│   ├── settings.py          # Django settings
+│   ├── urls.py              # Main URL routing
+│   └── wsgi.py              # WSGI configuration
+├── accounts/
+│   ├── models.py            # Custom User model
+│   ├── views.py             # Authentication views
+│   ├── serializers.py       # User serializers
+│   └── urls.py              # Auth endpoints
+├── resumes/
+│   ├── models.py            # Resume model
+│   ├── views.py             # Resume analysis views
+│   ├── serializers.py       # Resume serializers
+│   ├── utils.py             # PDF parser
+│   ├── gemini_service.py    # Gemini AI integration
+│   └── urls.py              # Resume endpoints
+├── templates/
+│   └── index.html           # Frontend interface
+├── media/                   # Uploaded files
+├── static/                  # Static files
+├── requirements.txt         # Python dependencies
+├── build.sh                 # Render build script
+├── runtime.txt              # Python version
+└── .env.example             # Environment template
 
 ---
 
